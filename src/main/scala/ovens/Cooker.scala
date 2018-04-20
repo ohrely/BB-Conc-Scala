@@ -8,7 +8,7 @@ import ovens.Thermostat.SetTemp
 import scala.concurrent.duration.FiniteDuration
 
 object Cooker {
-  sealed case class Tick(t: Long)
+  final case class Tick(t: Long)
 
   def main(args: Array[String]): Unit = {
     val system = ActorSystem("system")
