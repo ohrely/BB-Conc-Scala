@@ -1,11 +1,14 @@
 package akkastuff
 
-import akka.actor.{Actor, ActorRef, ActorSystem, Props}
+import akka.actor.{Actor, ActorPath, ActorRef, ActorSelection, ActorSystem, PoisonPill, Props}
 import akkastuff.MyActor.Msg
 
 class OtherActor extends Actor {
   override def receive: Receive = {
     case "Ping" => sender ! "Pong"
+    case "Who" => println(s"${self.path}")
+    case "Make" => context.actorOf(Props[OtherActor], "my-child")
+    case "Die" => println(s"${self.path} is dying"); context.system.stop(self)
   }
 }
 
@@ -41,12 +44,25 @@ class MyActor(other: ActorRef) extends Actor {
 object SayHello {
   def main(args: Array[String]): Unit = {
     val system = ActorSystem("system")
-    val other = system.actorOf(Props[OtherActor])
-    val ar = system.actorOf(Props(classOf[MyActor], other))
+    val other = system.actorOf(Props[OtherActor], "other")
+    val ar = system.actorOf(Props(classOf[MyActor], other), "my-main-actor")
 
     ar ! "Goodbye"
     ar ! Msg("Hello", 3)
     ar ! Msg("Goodbye", 99)
     ar ! Msg("P", 0)
+
+    other ! "Who"
+    other ! "Make"
+    val ap = ActorPath.fromString("akka://system/user/other/my-child")
+    val as = system.actorSelection(ap)
+    Thread.sleep(1000)
+    as ! "Who"
+
+    other ! PoisonPill
+    other ! "Who"
+//    other ! "Die"
+//    other ! "Who"
+//    as ! "Who"
   }
 }
